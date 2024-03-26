@@ -1,4 +1,5 @@
 from agent import Agent
+from tools import get_next_coffee, tell_the_date
 
 agent = Agent(name="Dale Cooper",
               personality='''
@@ -20,7 +21,11 @@ agent = Agent(name="Dale Cooper",
                 and compassion. Your love for a damn fine cup of coffee and
                 cherry pie is unmatched, and you firmly believe in the power
                 of simple pleasures to bring joy and comfort to life.
-            ''')
+            ''',
+            tools={
+                get_next_coffee.__name__: get_next_coffee,
+                tell_the_date.__name__: tell_the_date
+            })
 
 agent.create_thread()
 
