@@ -1,6 +1,7 @@
 import time
 import openai
 import os
+import db
 from dotenv import load_dotenv
 from openai.types.beta.threads.run import Run
 
@@ -38,11 +39,11 @@ class Agent:
         message = self.get_last_message()
         return message
 
-    def get_donut_count_from_db(self):
-        return 1
+    def get_coffee_count_from_db(self):
+        return db.coffee_count
 
     def _create_run(self):
-        count = self.get_donut_count_from_db()
+        count = self.get_coffee_count_from_db()
         return self.client.beta.threads.runs.create(
             thread_id=self.thread.id,
             assistant_id=self.assistant.id,
@@ -52,7 +53,7 @@ class Agent:
 
                 Metadata related to this conversation:
                 {{
-                    "donut_count": {count}
+                    "coffee_count": {count}
                 }}
             """,
         )
