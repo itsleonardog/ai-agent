@@ -2,17 +2,20 @@ import time
 import openai
 import os
 import db
+import docstring_parser
 from dotenv import load_dotenv
 from openai.types.beta.threads.run import Run
 
 load_dotenv()
 
 class Agent:
-    def __init__(self, name: str, personality: str):
+    def __init__(self, name: str, personality: str, tools: dict[str, callable]):
         self.name = name
         self.personality = personality
         api_key = os.getenv('OPENAI_API')
         self.client = openai.OpenAI(api_key=api_key)
+
+        self.tool_belt = tools
         self.assistant = self.client.beta.assistants.create(
             name=self.name,
             model="gpt-4-turbo-preview"
@@ -47,6 +50,7 @@ class Agent:
         return self.client.beta.threads.runs.create(
             thread_id=self.thread.id,
             assistant_id=self.assistant.id,
+            tools=self._get_tools_in_open_ai_format(),
             instructions=f"""
                 Your name is: {self.name}
                 Your personality is: {self.personality}
@@ -83,3 +87,40 @@ class Agent:
             if elapsed_time > 120:  # 2 minutes
                 self._cancel_run(run)
                 raise Exception("Run took longer than 2 minutes.")
+
+    def _get_tools_in_open_ai_format(self):
+        python_type_to_json_type = {
+            "str": "string",
+            "int": "number",
+            "float": "number",
+            "bool": "boolean",
+            "list": "array",
+            "dict": "object"
+        }
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.__name__,
+                    "description": docstring_parser.parse(tool.__doc__).short_description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            p.arg_name: {
+                                "type": python_type_to_json_type.get(p.type_name, "string"),
+                                "description": p.description
+                            }
+                            for p in docstring_parser.parse(tool.__doc__).params
+
+                        },
+                        "required": [
+                            p.arg_name
+                            for p in docstring_parser.parse(tool.__doc__).params
+                            if not p.is_optional
+                        ]
+                    }
+                }
+            }
+            for tool in self.tool_belt.values()
+        ]
