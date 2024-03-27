@@ -78,6 +78,9 @@ class Agent:
                 raise Exception(f"Run failed with error: {run.last_error}")
             if status == 'expired':
                 raise Exception("Run expired.")
+            if status == 'requires_action':
+                self._call_tools(
+                    run.id, run.required_action.submit_tool_outputs.tool_calls)
 
             time.sleep(1)
             run = self._retrieve_run(run)
