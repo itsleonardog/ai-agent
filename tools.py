@@ -1,5 +1,5 @@
 import db
-import datetime
+from datetime import datetime
 
 def get_next_coffee(coffee_count: int):
     """
