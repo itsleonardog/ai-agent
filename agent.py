@@ -3,6 +3,7 @@ import openai
 import os
 import db
 import docstring_parser
+import json
 from dotenv import load_dotenv
 from openai.types.beta.threads.run import Run
 
@@ -127,3 +128,20 @@ class Agent:
             }
             for tool in self.tool_belt.values()
         ]
+
+    def _call_tools(self, run_id: str, tool_calls: list[dict]):
+        tool_outputs = []
+
+        for tool_call in tool_calls:
+            function = tool_call.function
+            function_args = json.loads(function.arguments)
+            function_to_call = self.tool_belt[function.name]
+            function_response = function_to_call(**function_args)
+            tool_outputs.append(
+                {"tool_call_id": tool_call.id, "output": function_response})
+
+        self.client.beta.threads.runs.submit_tool_outputs(
+            thread_id=self.thread.id,
+            run_id=run_id,
+            tool_outputs=tool_outputs
+        )
